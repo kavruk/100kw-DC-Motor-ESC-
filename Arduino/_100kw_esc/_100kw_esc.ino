@@ -63,7 +63,9 @@ void loop() {
   HiVoltage =  (5.0 * analogRead(HVPin ) * 4750.0) / 1024;
 
   // map it to the range of the analog out:
+  constrain(MainFB,154,940);
   MainPWM = map(MainFB, 154, 940, 0, 255);
+  constrain(SecFB,948,562);
   SecPWM = map(SecFB, 948, 562, 0, 155); //temp limit
 
   // change the analog out value:
