@@ -8,22 +8,26 @@ LiquidCrystal_I2C lcd(0x27, 16, 2, LCD_5x8DOTS);
 
 #endif
 // These defines won't change.  They're used to give names to the pins used:
-
-#define CURRENT_PIN A0 // A1302 hall senzor
-#define TEMP_PIN A1 //  pinA1 - lm35 temp senzor   
-#define FB2_PIN A2 // FB2     947 - 562   (Bosch)
-#define FB1_PIN A3 // FB1     157 - 940   (Bosch)
-#define HV_PIN A6 // volt-HV 100k & 2.2k
-#define ROTOR_PWM_PIN 6 // MainPWM for Rotor
-#define STATOR_PWM_PIN 9 // SecPWM for Stator
-
+// A1302 hall senzor
+#define CURRENT_PIN A0
+//pinA1 - lm35 temp senzor
+#define TEMP_PIN A1
+// FB2     947 - 562   (Bosch)
+#define FB2_PIN A3
+// FB1     157 - 940   (Bosch)
+#define FB1_PIN A2
+// volt-HV 100k & 2.2k
+#define HV_PIN A6
+#define ROTOR_PWM_PIN 9
+#define STATOR_PWM_PIN 6
+#define MAX_AMP 30
 int MainFB = 0;               // MainFB ( TPS1 )
 int SecFB = 0;                // SecFB ( TPS2 )
 float HiVoltage = 0;            // Hi  Voltage 0-220v
 int MainPWM = 0;              // MainPWM for Rotor
 int SecPWM = 0;               // SecPWM for Stator
 int tempValue = 0;            //  lm35 -temperature sensor
-float AMP = 0;                  //  A1302 hall senzor
+float AMP = 0, TargetAMP = 0;                  //  A1302 hall senzor
 
 
 
@@ -41,7 +45,6 @@ void setup() {
   lcd.begin();
   // Turn on the blacklight and print a message.
   lcd.backlight();
-  lcd.print("Hello, world1!");
 #endif
 }
 
@@ -54,26 +57,27 @@ void loop() {
     AMP += analogRead(CURRENT_PIN);
     HiVoltage += analogRead(HV_PIN);
   }
-  AMP = (AMP / 30 - 514.5) / 2-1.05;
+  AMP = (AMP / 30 - 514.5) / 2 - 1.05;
   //HiVoltage = (5.0 * HiVoltage/30 * 4750.0) / 2048 ;
   HiVoltage = HiVoltage / 264.0;
   //MainFB = analogRead(FB1_PIN );
   //MainFB = constrain(MainFB, 154, 940);
-  SecFB =  analogRead(FB2_PIN );
-  SecFB = constrain(SecFB, 310, 760); 
+  MainFB =  analogRead(FB1_PIN );
+  MainFB = constrain(MainFB, 310, 760);
   // map it to the range of the analog out:
   //mai intai te uiti ca iti vine MAINFB si SECFB ca limite si bagi limitele in map
   //MainPWM = map(MainFB, 154, 940, 0, 12); //limita laPWM 4.7%
-  SecPWM = map(SecFB, 310, 770, 0, 12);   //limita laPWM 4.7%
+  TargetAMP = map(MainFB, 310, 770, 0, MAX_AMP);   //limita la MAX_AMP
+  MainPWM = (TargetAMP - AMP) * (255 / TargetAMP);
   // change the analog out value:
   //analogWrite(ROTOR_PWM_PIN, MainPWM);
-  analogWrite(STATOR_PWM_PIN, SecPWM);
+  analogWrite(ROTOR_PWM_PIN, MainPWM);
 #if SERIAL_ENABLED
   // print the results to the serial monitor:
   //  Serial.print("MainFB = ");
   //  Serial.print(MainFB);
   Serial.print("\t SecFB = ");
-  Serial.print(SecFB);
+  Serial.print(MainFB);
   Serial.print("\t HiVoltage = ");
   Serial.print(HiVoltage);
   Serial.print("\t AMP = ");
